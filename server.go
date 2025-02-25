@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 type Server struct {
@@ -26,6 +27,9 @@ func (server *Server) Handler(conn net.Conn) {
 	// 创建User实例并将其加入到OnlineMap中
 	user := NewUser(conn, server)
 
+	// 创建记录当前用户是否活跃的channel，用于和负责处理客户端消息的go程通信
+	isActive := make(chan bool)
+
 	// 用户上线
 	user.Online()
 
@@ -37,6 +41,7 @@ func (server *Server) Handler(conn net.Conn) {
 			if n == 0 {
 				// 用户下线
 				user.Offline()
+				fmt.Println("客户端断开连接")
 				return
 			}
 
@@ -44,15 +49,31 @@ func (server *Server) Handler(conn net.Conn) {
 				fmt.Println("conn.Read err:", err)
 				return
 			}
-
+			// 提取用户消息并去除'\n'
 			msg := string(buf[:n-1])
 			// 处理用户消息
 			user.DoMessage(msg)
+			// 用户活跃
+			isActive <- true
 		}
 	}()
 
-	// 保证当前go程不睡眠
-	select {}
+	// 阻塞当前go程
+	for {
+		select {
+		case <-isActive:
+			// 用户活跃，可以不做操作，自动执行下一个case重置定时器
+		case <-time.After(10 * time.Second):
+			// 用户登录超时，强制下线用户
+			user.conn.Write([]byte("你被踢了\n"))
+			close(user.channel)
+			conn.Close()
+
+			// 退出函数，结束当前go程
+			return
+		}
+	}
+
 }
 
 // 广播用户上线消息的接口

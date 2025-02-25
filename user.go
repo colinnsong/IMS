@@ -66,7 +66,7 @@ func (user *User) DoMessage(msg string) {
 			user.conn.Write([]byte(onlineMsg))
 		}
 		user.server.mapLock.Unlock()
-	} else if msg[:7] == "rename|" {
+	} else if len(msg) >= 7 && msg[:7] == "rename|" {
 		// 修改当前用户的名称
 		newName := msg[7:]
 		user.server.mapLock.Lock()
