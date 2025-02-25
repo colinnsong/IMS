@@ -24,13 +24,10 @@ func (server *Server) Handler(conn net.Conn) {
 	fmt.Println("客户端连接成功")
 
 	// 创建User实例并将其加入到OnlineMap中
-	user := NewUser(conn)
-	server.mapLock.Lock()
-	server.OnlineMap[user.Name] = user
-	server.mapLock.Unlock()
+	user := NewUser(conn, server)
 
-	// 广播用户上线的消息
-	server.BroadCast(user, "已上线")
+	// 用户上线
+	user.Online()
 
 	// 接收客户端发送的消息
 	go func() {
@@ -38,7 +35,8 @@ func (server *Server) Handler(conn net.Conn) {
 		for {
 			n, err := conn.Read(buf)
 			if n == 0 {
-				server.BroadCast(user, "已下线")
+				// 用户下线
+				user.Offline()
 				return
 			}
 
@@ -48,7 +46,8 @@ func (server *Server) Handler(conn net.Conn) {
 			}
 
 			msg := string(buf[:n-1])
-			server.BroadCast(user, msg)
+			// 处理用户消息
+			user.DoMessage(msg)
 		}
 	}()
 
@@ -64,7 +63,7 @@ func (server *Server) BroadCast(user *User, msg string) {
 	server.Message <- sendMsg
 }
 
-// 监听Message中是否有消息的接口
+// 监听Message中是否有消息
 func (server *Server) ListenMessage() {
 	for {
 		msg := <-server.Message
