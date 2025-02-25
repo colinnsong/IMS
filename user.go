@@ -1,6 +1,9 @@
 package main
 
-import "net"
+import (
+	"net"
+	"strings"
+)
 
 type User struct {
 	Name    string
@@ -66,6 +69,7 @@ func (user *User) DoMessage(msg string) {
 			user.conn.Write([]byte(onlineMsg))
 		}
 		user.server.mapLock.Unlock()
+
 	} else if len(msg) >= 7 && msg[:7] == "rename|" {
 		// 修改当前用户的名称
 		newName := msg[7:]
@@ -80,6 +84,20 @@ func (user *User) DoMessage(msg string) {
 			user.conn.Write([]byte("已成功修改用户名为：" + newName + "\n"))
 		}
 		user.server.mapLock.Unlock()
+
+	} else if len(msg) >= 3 && msg[:3] == "to|" {
+		// 私聊消息
+		// 1.获取对方用户名和user对象
+		remoteName := strings.Split(msg, "|")[1]
+		remoteUser, ok := user.server.OnlineMap[remoteName]
+		if !ok {
+			user.conn.Write([]byte("该用户名不存在\n"))
+			return
+		}
+		// 2.获取消息内容并发送
+		content := strings.Split(msg, "|")[2]
+		remoteUser.conn.Write([]byte(user.Name + "对你说：" + content + "\n"))
+
 	} else {
 		user.server.BroadCast(user, msg)
 	}

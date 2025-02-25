@@ -63,7 +63,7 @@ func (server *Server) Handler(conn net.Conn) {
 		select {
 		case <-isActive:
 			// 用户活跃，可以不做操作，自动执行下一个case重置定时器
-		case <-time.After(10 * time.Second):
+		case <-time.After(60 * time.Second):
 			// 用户登录超时，强制下线用户
 			user.conn.Write([]byte("你被踢了\n"))
 			close(user.channel)
