@@ -58,5 +58,15 @@ func (user *User) Offline() {
 
 // 用户处理消息的接口
 func (user *User) DoMessage(msg string) {
+	if msg == "who" {
+		// 查询当前在线用户
+		user.server.mapLock.Lock()
+		for _, onlineUser := range user.server.OnlineMap {
+			onlineMsg := "[" + onlineUser.Addr + "]" + onlineUser.Name + ":" + "在线...\n"
+			user.conn.Write([]byte(onlineMsg))
+		}
+		user.server.mapLock.Unlock()
+		return
+	}
 	user.server.BroadCast(user, msg)
 }
