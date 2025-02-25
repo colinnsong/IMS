@@ -66,7 +66,22 @@ func (user *User) DoMessage(msg string) {
 			user.conn.Write([]byte(onlineMsg))
 		}
 		user.server.mapLock.Unlock()
-		return
+	} else if msg[:7] == "rename|" {
+		// 修改当前用户的名称
+		newName := msg[7:]
+		user.server.mapLock.Lock()
+		_, ok := user.server.OnlineMap[newName]
+		if ok {
+			user.conn.Write([]byte("当前用户名已被使用\n"))
+		} else {
+			user.server.OnlineMap[newName] = user
+			delete(user.server.OnlineMap, user.Name)
+			user.Name = newName
+			user.conn.Write([]byte("已成功修改用户名为：" + newName + "\n"))
+		}
+		user.server.mapLock.Unlock()
+	} else {
+		user.server.BroadCast(user, msg)
 	}
-	user.server.BroadCast(user, msg)
+
 }
