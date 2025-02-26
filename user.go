@@ -81,7 +81,7 @@ func (user *User) DoMessage(msg string) {
 			user.server.OnlineMap[newName] = user
 			delete(user.server.OnlineMap, user.Name)
 			user.Name = newName
-			user.conn.Write([]byte("已成功修改用户名为：" + newName + "\n"))
+			user.conn.Write([]byte("已成功修改用户名为:" + newName + "\n"))
 		}
 		user.server.mapLock.Unlock()
 
@@ -96,7 +96,7 @@ func (user *User) DoMessage(msg string) {
 		}
 		// 2.获取消息内容并发送
 		content := strings.Split(msg, "|")[2]
-		remoteUser.conn.Write([]byte(user.Name + "对你说：" + content + "\n"))
+		remoteUser.conn.Write([]byte(user.Name + "对你说:" + content + "\n"))
 
 	} else {
 		user.server.BroadCast(user, msg)
